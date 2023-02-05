@@ -3,13 +3,13 @@ from hell import hell
 import math
 pygame.init()
 
-height2 = 900
-width2 = 930
-WIDTH = 1200
-HEIGHT = 600
+height2 = 950
+width2 = 900
+WIDTH = 900
+HEIGHT = 950
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Pacman")
-fps = 30
+fps = 60
 timer = pygame.time.Clock()
 level = hell
 color = "red"
@@ -21,6 +21,20 @@ menu_command1 = 0
 menu_command2 = 0
 menu_command3 = 0
 menu_command4 = 0
+pacman_images = []
+flicker = False
+turns_allowed = [False, False, False, False]
+direction_command = 0
+pacman_speed = 2
+score = 0
+
+for i in range(1, 4):
+    pacman_images.append(pygame.transform.scale(pygame.image.load(f"C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/pacman/{i}.png"), (45, 45)))
+
+pacman_x = 450
+pacman_y = 663
+direction = 0
+counter = 0
 
 class Button:
     def __init__(self, txt, pos):
@@ -43,9 +57,9 @@ class Button:
 def draw_game():
     screen.fill("black")
     command = 0
-    button = Button("Play", (470, 180))
-    button1 = Button("Settings", (470, 240))
-    button2 = Button("Exit", (470, 300))
+    button = Button("Play", (320, 180))
+    button1 = Button("Settings", (320, 240))
+    button2 = Button("Exit", (320, 300))
     button.draw()
     button1.draw()
     button2.draw()
@@ -60,10 +74,10 @@ def draw_game():
 def draw_levels():
     screen.fill("black")
     command = 0
-    button = Button("Exit", (900, 550))
-    button1 = Button("Hell", (120, 270))
-    button2 = Button("Dark Forest", (470, 270))
-    button3 = Button("Candy Land", (820, 270))
+    button = Button("Exit", (600, 750))
+    button1 = Button("Hell", (320, 270))
+    button2 = Button("Dark Forest", (320, 450))
+    button3 = Button("Candy Land", (320, 630))
     button.draw()
     button1.draw()
     button2.draw()
@@ -89,6 +103,10 @@ def draw_option():
         command = 2
     return command
 
+def draw_score():
+    score_text = font.render(f"Score: {score}", True, "white")
+    screen.blit(score_text, (10, 920))
+
 def draw_difficulty():
     screen.fill("black")
     command = 0
@@ -110,21 +128,91 @@ def draw_difficulty():
         command = 4
     return command
 
+def check_position(centerx, centery):
+    turns = [False, False, False, False]
+    num1 = (height2 - 50) // 32
+    num2 = (width2 // 30)
+    num3 = 15
+    if centerx // 30 < 29:
+        if direction == 0:
+            if level[centery // num1][(centerx - num3) // num2] < 3:
+                turns[1] = True
+        if direction == 1:
+            if level[centery // num1][(centerx + num3) // num2] < 3:
+                turns[0] = True
+        if direction == 2:
+            if level[(centery + num3)//num1][centerx // num2] < 3:
+                turns[3] = True
+        if direction == 3:
+            if level[(centery - num3)//num1][(centerx - num3) // num2] < 3:
+                turns[2] = True
+
+        if direction == 2 or direction == 3:
+            if 12 <= centerx % num2 <= 18:
+                if level[(centery + num3) // num1][centerx // num2] < 3:
+                    turns[3] = True
+                if level[(centery - num3) // num1][centerx // num2] < 3:
+                    turns[2] = True
+            if 12 <= centery % num1 <= 18:
+                if level[centery // num1][(centerx - num2) // num2] < 3:
+                    turns[1] = True
+                if level[centery // num1][(centerx + num2) // num2] < 3:
+                    turns[0] = True
+
+        if direction == 0 or direction == 1:
+            if 12 <= centerx % num2 <= 18:
+                if level[(centery + num1) // num1][centerx // num2] < 3:
+                    turns[3] = True
+                if level[(centery - num1) // num1][centerx // num2] < 3:
+                    turns[2] = True
+            if 12 <= centery % num1 <= 18:
+                if level[centery // num1][(centerx - num3) // num2] < 3:
+                    turns[1] = True
+                if level[centery // num1][(centerx + num3) // num2] < 3:
+                    turns[0] = True
+    else:
+        turns[0] = True
+        turns[1] = True
+    return turns
+
+def move_pacman(pacm_x, pacm_y):
+    if direction == 0 and turns_allowed[0]:
+        pacm_x += pacman_speed
+    elif direction == 1 and turns_allowed[1]:
+        pacm_x -= pacman_speed
+    elif direction == 2 and turns_allowed[2]:
+        pacm_y -= pacman_speed
+    elif direction == 3 and turns_allowed[3]:
+        pacm_y += pacman_speed
+    return pacm_x, pacm_y
+
+def check_points(score2):
+    num1 = (height2 - 50) // 32
+    num2 = width2 // 30
+    if 0 < pacman_x < 870:
+        if level[center_y // num1][center_x // num2] == 1:
+            level[center_y // num1][center_x // num2] = 0
+            score2 += 10
+        if level[center_y // num1][center_x // num2] == 2:
+            level[center_y // num1][center_x // num2] = 0
+            score2 += 50
+    return score2
+
 def draw_board():
     screen.fill("black")
     #obrazki ścian
-    pozioma_sciana_png = pygame.image.load("assets/walls/sciany_hell/sciana.png")
-    pionowa_sciana_png = pygame.image.load("assets/walls/sciany_hell/pionowa_sciana.png")
-    skret_lewo_png = pygame.image.load("assets/walls/sciany_hell/skret_lewo.png")
-    skret_prawo_png = pygame.image.load("assets/walls/sciany_hell/skret_prawo.png")
-    potrojny_dol_png = pygame.image.load("assets/walls/sciany_hell/potrojny_dol.png")
-    potrojny_prawo_png = pygame.image.load("assets/walls/sciany_hell/potrojny_prawo.png")
-    potrojny_lewo_png = pygame.image.load("assets/walls/sciany_hell/potrojny_lewo.png")
-    potrojny_lewo_gora_png = pygame.image.load("assets/walls/sciany_hell/potrojny_lewo_gora.png")
-    potrojny_prawo_gora_png = pygame.image.load("assets/walls/sciany_hell/potrojny_prawo_gora.png")
+    pozioma_sciana_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/sciana.png")
+    pionowa_sciana_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/pionowa_sciana.png")
+    skret_lewo_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/skret_lewo.png")
+    skret_prawo_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/skret_prawo.png")
+    potrojny_dol_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/potrojny_dol.png")
+    potrojny_prawo_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/potrojny_prawo.png")
+    potrojny_lewo_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/potrojny_lewo.png")
+    potrojny_lewo_gora_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/potrojny_lewo_gora.png")
+    potrojny_prawo_gora_png = pygame.image.load("C:/Users/krzysztof.kalinski/praktyki2023-1/SRC/assets/walls/sciany_hell/potrojny_prawo_gora.png")
 
     #skalowanie grafik
-    sciana_poziom1 = pygame.transform.scale(pozioma_sciana_png, (60, 80))
+    sciana_poziom1 = pygame.transform.scale(pozioma_sciana_png, (90, 100))
     sciana_poziom2 = pygame.transform.scale(pozioma_sciana_png, (80, 80))
     sciana_poziom3 = pygame.transform.scale(pozioma_sciana_png, (60, 170))
     sciana_poziom4 = pygame.transform.scale(pozioma_sciana_png, (80, 170))
@@ -137,8 +225,9 @@ def draw_board():
     potrojny_lewo_gora = pygame.transform.scale(potrojny_lewo_gora_png, (215, 210))
     potrojny_prawo_gora = pygame.transform.scale(potrojny_prawo_gora_png, (215, 210))
 
+
     #krótkie poziome
-    screen.blit(sciana_poziom1, (70, 106))
+    screen.blit(sciana_poziom1, (110, 176))
     screen.blit(sciana_poziom1, (470, 106))
     #długie poziome
     screen.blit(sciana_poziom2, (170, 376))
@@ -170,19 +259,16 @@ def draw_board():
     screen.blit(potrojny_prawo_gora, (40, 384))
 
     
-    
-
-    
     #rysowanie linii i kropek
-    num1 = ((630 - 50) // 32)
-    num2 = (600 // 30)
+    num1 = ((950 - 50) // 32)
+    num2 = (900 // 30)
     for i in range(len(level)):
         for j in range(len(level[i])):
             #małe kropki
             if level[i][j] == 1:
                 pygame.draw.circle(screen, 'white', (j * num2 + (0.5 * num2), i * num1 + (0.5 * num1)), 4)
             #duże kropki
-            if level[i][j] == 2:
+            if level[i][j] == 2 and not flicker:
                 pygame.draw.circle(screen, 'white', (j * num2 + (0.5 * num2), i * num1 + (0.5 * num1)), 10)
             #pionowe linie
             if level[i][j] == 3:
@@ -213,6 +299,15 @@ def draw_board():
             if level[i][j] == 9:
                 pygame.draw.line(screen, 'white', (j * num2, i * num1 + (0.5 * num1)),
                                  (j * num2 + num2, i * num1 + (0.5 * num1)), 3)
+    #RIGHT, LEFT, UP, DOWN
+    if direction == 0:
+        screen.blit(pacman_images[counter // 7], (pacman_x, pacman_y))
+    elif direction == 1:
+        screen.blit(pygame.transform.flip(pacman_images[counter // 7], True, False), (pacman_x, pacman_y))
+    elif direction == 2:
+        screen.blit(pygame.transform.rotate(pacman_images[counter // 7], 90), (pacman_x, pacman_y))
+    elif direction == 3:
+        screen.blit(pygame.transform.rotate(pacman_images[counter // 7], 270), (pacman_x, pacman_y))
     command = 0
     button = Button("Exit", (930, 350))
     button.draw()
@@ -221,7 +316,6 @@ def draw_board():
     return command
 running = True
 while running:
-    screen.fill("black")
     screen.fill("black")
     timer.tick(fps)
     if game:
@@ -252,6 +346,20 @@ while running:
                 game = draw_game()
             case 2:
                 game = draw_board()
+                if counter < 19:
+                    counter += 1
+                    if counter > 3:
+                        flicker = False
+                else:
+                    counter = 0
+                    flicker = True
+                draw_score()
+                center_x = pacman_x + 23
+                center_y = pacman_y + 24
+                turns_allowed = check_position(center_x, center_y)
+                pacman_x, pacman_y = move_pacman(pacman_x, pacman_y)
+                score = check_points(score)
+        
         match menu_command2:
             case 0:
                 None
@@ -264,6 +372,8 @@ while running:
                 None
             case 1:
                 game = draw_levels()
+                pacman_x = 450
+                pacman_y = 663
         match menu_command4:
             case 1:
                 None
@@ -274,25 +384,44 @@ while running:
             case 4:
                 game = draw_option()
 
-                
-        #if menu_command == 1:
-         #  screen.fill("black")
-         #   game = draw_levels()
-        #elif menu_command == 2:
-        #    screen.fill("black")
-        #    game = draw_option()
-        #elif menu_command == 3:
-        #    sys.exit()
-        #elif menu_command1 == 1:
-        #    screen.fill("black")
-        #    game = draw_game()
-        #elif menu_command1 == 2:
-        #    screen.fill("black")
-        #   game = draw_board()
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RIGHT:
+                direction_command = 0
+            if event.key == pygame.K_LEFT:
+                direction_command = 1
+            if event.key == pygame.K_UP:
+                direction_command = 2
+            if event.key == pygame.K_DOWN:
+                direction_command = 3
+
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_RIGHT and direction_command == 0:
+                direction_command = direction
+            if event.key == pygame.K_LEFT and direction_command == 1:
+                direction_command = direction
+            if event.key == pygame.K_UP and direction_command == 2:
+                direction_command = direction
+            if event.key == pygame.K_DOWN and direction_command == 3:
+                direction_command = direction
+
+
+        
+    if direction_command == 0 and turns_allowed[0]:
+        direction = 0
+    if direction_command == 1 and turns_allowed[1]:
+        direction = 1
+    if direction_command == 2 and turns_allowed[2]:
+        direction = 2
+    if direction_command == 3 and turns_allowed[3]:
+        direction = 3
+
+    if pacman_x > 900:
+        pacman_x = -47
+    elif pacman_x < -50:
+        pacman_x = 897
 
     pygame.display.flip()
 pygame.quit()
